@@ -1,0 +1,40 @@
+name: "fma_small"
+root_dir: "data/fma_small"
+metadata_dir: "data/fma_metadata"
+cache_dir: "data/cache/fma_small"
+corrupt_log: "data/cache/fma_small/corrupt_files.log"
+num_classes: 8
+
+genres:
+  - Electronic
+  - Experimental
+  - Folk
+  - Hip-Hop
+  - Instrumental
+  - International
+  - Pop
+  - Rock
+
+# ── Audio ────────────────────────────────────────────────────────────────────
+audio:
+  sample_rate: 16000
+  mono: true
+  clip_duration: 30.0         # total clip length (s)
+  train_crop_duration: 10.0   # random crop length (s) for training
+  eval_window_duration: 10.0  # sliding window length (s) for evaluation
+  eval_window_hop: 5.0        # 50 % overlap → ~5 windows per 30 s clip
+
+# ── Log-mel spectrogram ──────────────────────────────────────────────────────
+mel:
+  n_mels: 128
+  n_fft: 400        # 25 ms @ 16 kHz
+  hop_length: 160   # 10 ms @ 16 kHz
+  f_min: 0
+  f_max: 8000
+  power: 2.0
+  top_db: 80.0
+
+# ── Normalisation (filled automatically by prepare_data.py) ─────────────────
+stats:
+  mean: null
+  std: null

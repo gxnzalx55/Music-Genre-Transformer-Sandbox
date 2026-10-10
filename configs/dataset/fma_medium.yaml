@@ -1,0 +1,31 @@
+name: "fma_medium"
+root_dir: "data/fma_medium"
+metadata_dir: "data/fma_metadata"
+cache_dir: "data/cache/fma_medium"
+corrupt_log: "data/cache/fma_medium/corrupt_files.log"
+num_classes: 16
+genres: null    # auto-detected from tracks.csv top_level_genre column
+
+# ── Audio (identical to fma_small) ──────────────────────────────────────────
+audio:
+  sample_rate: 16000
+  mono: true
+  clip_duration: 30.0
+  train_crop_duration: 10.0
+  eval_window_duration: 10.0
+  eval_window_hop: 5.0
+
+# ── Log-mel spectrogram ──────────────────────────────────────────────────────
+mel:
+  n_mels: 128
+  n_fft: 400
+  hop_length: 160
+  f_min: 0
+  f_max: 8000
+  power: 2.0
+  top_db: 80.0
+
+# ── Normalisation ────────────────────────────────────────────────────────────
+stats:
+  mean: null
+  std: null

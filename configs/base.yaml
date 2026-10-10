@@ -1,0 +1,63 @@
+seed: 42
+experiment_name: "music_genre_clf"
+
+paths:
+  output_dir: "outputs"
+  log_dir: "logs"
+  checkpoint_dir: "checkpoints"
+
+training:
+  epochs: 50
+  batch_size: 64          # fits comfortably in 12 GB VRAM (RTX 5070)
+  num_workers: 4          # set to 0 if Windows multiprocessing issues arise
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
+  accumulate_grad_batches: 1
+  compile: true           # torch.compile — set false to debug
+
+  optimizer:
+    type: "adamw"
+    lr: 1.0e-4
+    weight_decay: 0.05
+    betas: [0.9, 0.999]
+    eps: 1.0e-8
+
+  scheduler:
+    type: "cosine_with_warmup"
+    warmup_epochs: 5
+    eta_min: 1.0e-6
+
+  amp:
+    enabled: true
+    dtype: "bfloat16"     # BF16 for Blackwell tensor cores (RTX 50xx)
+
+  gradient_clip_val: 1.0
+  gradient_checkpointing: false   # enable for deeper models / smaller VRAM
+
+  early_stopping:
+    patience: 10
+    monitor: "val_acc"
+    min_delta: 0.001
+
+  augmentation:
+    spec_augment:
+      enabled: true
+      time_mask_param: 80
+      freq_mask_param: 27
+      num_time_masks: 2
+      num_freq_masks: 2
+    mixup:
+      enabled: true
+      alpha: 0.3
+
+logging:
+  tensorboard: true
+  wandb: false
+  wandb_project: "music_genre_clf"
+  log_every_n_steps: 10
+
+checkpoint:
+  save_top_k: 3
+  monitor: "val_acc"
+  mode: "max"

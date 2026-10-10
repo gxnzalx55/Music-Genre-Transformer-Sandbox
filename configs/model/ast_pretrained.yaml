@@ -1,0 +1,12 @@
+type: "pretrained"
+name: "AST-HuggingFace"
+
+hf_model_id: "MIT/ast-finetuned-audioset-10-10-0.4593"
+num_classes: null       # overridden at runtime from dataset config
+
+# ── Fine-tuning strategy ──────────────────────────────────────────────────────
+freeze_layers: 0        # freeze first N encoder blocks (0 = train everything)
+lr_multiplier_encoder: 0.1   # encoder gets 0.1× base LR; head gets 1.0×
+
+# ── Replacement head ─────────────────────────────────────────────────────────
+head_dropout: 0.1

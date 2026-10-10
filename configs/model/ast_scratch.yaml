@@ -1,0 +1,21 @@
+type: "scratch"
+name: "AST-scratch"
+
+# ── Patch embedding ───────────────────────────────────────────────────────────
+patch_size: [16, 16]    # [freq_bins, time_frames]
+in_channels: 1
+
+# ── Transformer encoder ───────────────────────────────────────────────────────
+embed_dim: 256
+depth: 12
+num_heads: 8
+mlp_ratio: 4.0
+qkv_bias: true
+dropout: 0.1
+attn_dropout: 0.0
+drop_path_rate: 0.1     # stochastic depth
+
+# ── Classification ────────────────────────────────────────────────────────────
+num_classes: null       # overridden at runtime from dataset config
+cls_token: true
+pos_embed: "learned"    # "learned" | "sinusoidal"
