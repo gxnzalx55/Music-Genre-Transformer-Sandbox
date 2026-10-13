@@ -38,6 +38,28 @@ def _load_corrupt_ids(log_path: Path) -> set[int]:
     return ids
 
 
+def sliding_windows(spec: np.ndarray, window_frames: int, hop_frames: int) -> list[np.ndarray]:
+    """Cut ``spec`` (n_mels, T) into ``window_frames``-wide windows with ``hop_frames`` stride.
+
+    Short clips are reflect-padded to one window; a final partial window is
+    aligned to the end of the clip.
+    """
+    T, n = spec.shape[1], window_frames
+    if T < n:
+        return [np.pad(spec, ((0, 0), (0, n - T)), mode="reflect")]
+
+    windows: list[np.ndarray] = []
+    start = 0
+    while start + n <= T:
+        windows.append(spec[:, start : start + n])
+        start += hop_frames
+
+    # Final partial window, only if frames remain beyond the last window's end.
+    if start - hop_frames + n < T:
+        windows.append(spec[:, T - n : T])
+    return windows
+
+
 class FMADataset(Dataset):
     """FMA spectrogram dataset.
 
@@ -148,24 +170,7 @@ class FMADataset(Dataset):
 
     def _sliding_windows(self, spec: np.ndarray) -> list[np.ndarray]:
         """Return all ``window_frames``-wide windows with ``hop_frames`` stride."""
-        T   = spec.shape[1]
-        n   = self.window_frames
-        hop = self.hop_frames
-
-        if T < n:
-            return [np.pad(spec, ((0, 0), (0, n - T)), mode="reflect")]
-
-        windows: list[np.ndarray] = []
-        start = 0
-        while start + n <= T:
-            windows.append(spec[:, start : start + n])
-            start += hop
-
-        # Final partial window (if any frames remain)
-        if start < T:
-            windows.append(spec[:, T - n : T])
-
-        return windows
+        return sliding_windows(spec, self.window_frames, self.hop_frames)
 
     # ── Static helpers ────────────────────────────────────────────────────────
 

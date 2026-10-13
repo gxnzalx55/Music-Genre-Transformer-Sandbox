@@ -23,7 +23,41 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    raise NotImplementedError
+    import numpy as np
+    import torch
+    from omegaconf import OmegaConf
+
+    from data.dataset import sliding_windows
+    from data.preprocess import compute_melspec
+    from data.stats import load_stats
+    from evaluation.metrics import aggregate_window_logits
+    from models.factory import load_model_from_checkpoint
+    from training.utils import get_device
+
+    args = parse_args()
+    device = get_device()
+    # --model is unused: the architecture comes from the checkpoint's stored config.
+    model, ckpt_cfg = load_model_from_checkpoint(args.checkpoint, device)
+    dataset_cfg = OmegaConf.load(args.dataset)
+    genres = sorted(ckpt_cfg.dataset.genres)
+
+    spec = compute_melspec(Path(args.audio_file), dataset_cfg)          # (n_mels, T)
+    sr, hop = dataset_cfg.audio.sample_rate, dataset_cfg.mel.hop_length
+    windows = sliding_windows(
+        spec,
+        int(dataset_cfg.audio.eval_window_duration * sr / hop) + 1,
+        int(dataset_cfg.audio.eval_window_hop * sr / hop),
+    )
+    mean, std = load_stats(dataset_cfg)
+    x = torch.from_numpy(np.stack(windows)).float()
+    x = ((x - mean) / (std + 1e-6)).unsqueeze(1).to(device)              # (W, 1, n_mels, T)
+
+    with torch.no_grad():
+        logits = model(x).float().cpu().numpy()
+    probs = aggregate_window_logits(list(logits))
+
+    for rank, idx in enumerate(np.argsort(probs)[::-1][: args.top_k], start=1):
+        print(f"{rank}. {genres[idx]:<15} {probs[idx]:.3f}")
 
 
 if __name__ == "__main__":
