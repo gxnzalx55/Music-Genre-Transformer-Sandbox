@@ -34,7 +34,13 @@ def download_fma(output_dir: str | Path, subset: str = "small") -> None:
         if dest.exists():
             log.info("Already downloaded: %s", filename)
             continue
-        _download_file(f"{FMA_BASE_URL}/{filename}", dest)
+        try:
+            _download_file(f"{FMA_BASE_URL}/{filename}", dest)
+        except requests.HTTPError as exc:
+            if filename == CHECKSUMS_FILE and exc.response is not None                     and exc.response.status_code == 404:
+                log.warning("%s not available on the mirror — skipping", filename)
+                continue
+            raise
 
 
 def _download_file(url: str, dest: Path) -> None:
