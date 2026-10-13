@@ -100,6 +100,16 @@ def preprocess_dataset(cfg) -> None:
     Corrupt files are logged to cfg.corrupt_log and skipped.
     Uses ThreadPoolExecutor for parallel I/O + computation.
     """
+    # Fail loudly: is_corrupt() swallows exceptions, so a missing dependency
+    # would otherwise mark every track as corrupt.
+    try:
+        import librosa  # noqa: F401
+        import torchaudio  # noqa: F401
+    except ImportError as exc:
+        raise RuntimeError(
+            f"Missing audio dependency ({exc}). Run: pip install -r requirements.txt"
+        ) from exc
+
     metadata_dir = Path(cfg.metadata_dir)
     root_dir = Path(cfg.root_dir)
     cache_dir = Path(cfg.cache_dir)

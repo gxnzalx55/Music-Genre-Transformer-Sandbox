@@ -2,3 +2,12 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Datasets, caches and run artifacts
+data/fma_*
+data/cache/
+checkpoints/*
+logs/*
+outputs/*
+!checkpoints/.gitkeep
+prepare_data.log
