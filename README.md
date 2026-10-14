@@ -166,9 +166,11 @@ The architecture is read from the checkpoint, so `--model` is not needed.
 | Model | Training | Val. accuracy | Test accuracy | Test macro-F1 |
 |---|---|---|---|---|
 | AST scratch | 50 epochs, ~11 min | 53.5 % | **49.6 %** | 0.485 |
-| AST pretrained (HF) | 15 epochs, ~38 min | 63.3 % | **56.75 %** | 0.557 |
+| AST pretrained (HF), input scale 1.0 | 15 epochs, ~38 min | 63.3 % | 56.75 % | 0.557 |
+| AST pretrained (HF), input scale 0.5 (default) | 15 epochs, ~39 min (180 W limit) | 64.75 % | **58.63 %** | 0.578 |
 
 The pretrained model reached 54 % validation accuracy after a single epoch and plateaued
 around 62–63 % from epoch 7, with mild overfitting afterwards.  On the test split
-the pretrained model is ~7 points better than the scratch one.  Both models are below the usual
+the pretrained model is ~7-9 points better than the scratch one.  The 0.5 input scale matches the
+std ≈ 0.5 inputs the HF AST was pretrained on; the gain (+1.9 pts) is within test noise (±1.7).  Both models are below the usual
 literature figures; see `INFORME.md` for limitations and suggested next steps.

@@ -13,3 +13,4 @@ outputs/*
 prepare_data.log
 train_pretrained.log
 train_scratch.log
+train_pretrained_scale05.log

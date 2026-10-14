@@ -9,7 +9,8 @@ El proyecto partía de un **esqueleto**: toda la fase de datos estaba implementa
 | Modelo | Mejor val. acc | Test acc | Test macro-F1 | Tiempo |
 |---|---|---|---|---|
 | AST desde cero (9,67 M parám., 50 épocas) | 53,5 % (época 46) | **49,6 %** | 0,485 | ~11 min |
-| AST preentrenado HF (15 épocas) | **63,3 %** (época 11) | **56,75 %** | 0,557 | ~38 min |
+| AST preentrenado HF (15 épocas) | 63,3 % (época 11) | 56,75 % | 0,557 | ~38 min |
+| AST preentrenado HF, `input_scale=0.5` (15 épocas) | **64,75 %** (época 8) | **58,63 %** | 0,578 | ~39 min |
 
 El preentrenado se evaluó después en test (`outputs/pretrained_15ep/`): 56,75 % de precisión y 0,557 de macro-F1, unos 7 puntos por encima del modelo desde cero (49,6 %). Cae ~6,5 puntos respecto a validación (63,3 %), como se esperaba. Ambos quedan por debajo del rango que anuncia el README (55–65 % y 75–85 %); el desde cero (49,6 %) queda por debajo de 55–65 % y el preentrenado (56,75 %) muy lejos de 75–85 %.
 
@@ -66,6 +67,8 @@ Precisión de entrenamiento ≈ 50 %, casi igual a la de validación: el modelo 
 ### AST preentrenado (validación)
 
 La validación llegó a 54 % en la **primera** época (el modelo desde cero tardó 46 en alcanzarlo) y se estabilizó en 62–63 % desde la época 7. La precisión de entrenamiento siguió subiendo hasta 72,7 % (época 15): empieza un sobreajuste leve. Mejor época: 11 (val. acc 0,6325, val. F1 0,6276).
+
+Con `input_scale=0.5` (el AST original esperaba entradas de desviación ≈ 0,5) el test mejora 1,9 puntos; está dentro del ruido (±1,7) y es una sola ejecución. Ahora es el valor por defecto. El mejor punto fue la época 8; después la validación se estanca y el entrenamiento sobreajusta.
 
 ## 6. Limitaciones y cosas por verificar
 

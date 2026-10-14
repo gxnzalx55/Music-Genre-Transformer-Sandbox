@@ -25,6 +25,8 @@ class PretrainedAST(nn.Module):
         hidden = self.hf.config.hidden_size
         self.max_length = self.hf.config.max_length
         self.lr_multiplier_encoder = float(cfg.lr_multiplier_encoder)
+        # Checkpoints trained before this option existed behave as scale 1.0.
+        self.input_scale = float(cfg.get("input_scale", 1.0))
         self.hf.classifier = nn.Sequential(
             nn.LayerNorm(hidden),
             nn.Dropout(cfg.head_dropout),
@@ -44,7 +46,7 @@ class PretrainedAST(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x: (B, 1, freq, time) → logits: (B, num_classes)."""
-        x = x.squeeze(1).transpose(1, 2)  # (B, time, freq), as HF expects
+        x = x.squeeze(1).transpose(1, 2) * self.input_scale  # (B, time, freq), as HF expects
         t = x.shape[1]
         if t < self.max_length:
             x = F.pad(x, (0, 0, 0, self.max_length - t))
