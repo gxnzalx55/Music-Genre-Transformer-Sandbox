@@ -9,9 +9,9 @@ El proyecto partía de un **esqueleto**: toda la fase de datos estaba implementa
 | Modelo | Mejor val. acc | Test acc | Test macro-F1 | Tiempo |
 |---|---|---|---|---|
 | AST desde cero (9,67 M parám., 50 épocas) | 53,5 % (época 46) | **49,6 %** | 0,485 | ~11 min |
-| AST preentrenado HF (15 épocas) | **63,3 %** (época 11) | *no evaluado* | — | ~38 min |
+| AST preentrenado HF (15 épocas) | **63,3 %** (época 11) | **56,75 %** | 0,557 | ~38 min |
 
-**El modelo preentrenado no se ha evaluado en test** (se pidió no usar más la GPU). Su cifra de 63,3 % es de validación, que es una medición distinta y algo optimista respecto a test, por lo que no se puede comparar directamente con el 49,6 % del modelo desde cero. Los dos quedan por debajo del rango que anuncia el README (55–65 % y 75–85 %).
+El preentrenado se evaluó después en test (`outputs/pretrained_15ep/`): 56,75 % de precisión y 0,557 de macro-F1, unos 7 puntos por encima del modelo desde cero (49,6 %). Cae ~6,5 puntos respecto a validación (63,3 %), como se esperaba. Ambos quedan por debajo del rango que anuncia el README (55–65 % y 75–85 %); el desde cero (49,6 %) queda por debajo de 55–65 % y el preentrenado (56,75 %) muy lejos de 75–85 %.
 
 ## 2. Estado del código al empezar
 
@@ -69,7 +69,6 @@ La validación llegó a 54 % en la **primera** época (el modelo desde cero tard
 
 ## 6. Limitaciones y cosas por verificar
 
-- **El preentrenado no está evaluado en test.** Es el siguiente paso inmediato (`scripts/evaluate.py` sobre su checkpoint).
 - La validación usa **un recorte aleatorio** por clip (no ventanas), por lo que tiene algo de ruido.
 - El AST preentrenado espera su propia normalización de entrada; aquí se normaliza con la media/desviación de FMA (−9,617 / 17,340). Puede restar rendimiento.
 - Con `n_fft=400` y 128 mels, `torchaudio` avisa de que algún filtro mel queda vacío (decisión de la configuración).
@@ -79,7 +78,7 @@ La validación llegó a 54 % en la **primera** época (el modelo desde cero tard
 
 ## 7. Siguientes pasos recomendados
 
-1. Evaluar el preentrenado en test (necesita GPU brevemente, ~1 min).
+1. ~~Evaluar el preentrenado en test~~ (hecho: 56,75 %).
 2. Corregir el README: las estadísticas se guardan en `data/cache/fma_small/stats.json` (no en el YAML), la tabla de resultados esperados, y que `best.pt` es único.
 3. Hacer que `best.pt` viva dentro de la carpeta de cada experimento: hoy un entrenamiento nuevo lo sobrescribe. **Ya ha ocurrido:** el `best.pt` actual es el del preentrenado; el del modelo desde cero se conserva en `checkpoints/scratch_50ep_AST-scratch/epoch046_val_acc0.5350.pt`.
 4. Probar menos regularización (mixup/SpecAugment) o más épocas en el modelo desde cero, y una normalización acorde al preentrenado.

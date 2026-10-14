@@ -11,3 +11,5 @@ logs/*
 outputs/*
 !checkpoints/.gitkeep
 prepare_data.log
+train_pretrained.log
+train_scratch.log

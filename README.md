@@ -154,15 +154,22 @@ music_genre_clf/
 
 Datasets, caches, checkpoints, logs and outputs are git-ignored.
 
+### Trying a trained model on any audio file
+
+```bash
+python scripts/predict.py path/to/song.mp3 --checkpoint checkpoints/best.pt --top-k 3
+```
+
+The architecture is read from the checkpoint, so `--model` is not needed.
+
 ## Results (FMA small, 8 genres, RTX 5070)
 
 | Model | Training | Val. accuracy | Test accuracy | Test macro-F1 |
 |---|---|---|---|---|
 | AST scratch | 50 epochs, ~11 min | 53.5 % | **49.6 %** | 0.485 |
-| AST pretrained (HF) | 15 epochs, ~38 min | 63.3 % | not yet evaluated | — |
+| AST pretrained (HF) | 15 epochs, ~38 min | 63.3 % | **56.75 %** | 0.557 |
 
 The pretrained model reached 54 % validation accuracy after a single epoch and plateaued
-around 62–63 % from epoch 7, with mild overfitting afterwards.  Validation and test
-accuracy are different measurements, so the two rows are not directly comparable until
-the pretrained model is evaluated on the test split.  Both models are below the usual
+around 62–63 % from epoch 7, with mild overfitting afterwards.  On the test split
+the pretrained model is ~7 points better than the scratch one.  Both models are below the usual
 literature figures; see `INFORME.md` for limitations and suggested next steps.
