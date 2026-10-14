@@ -89,8 +89,7 @@ Notes:
   evaluation with sliding windows is done by `evaluate.py`.
 
 Each run keeps the top-3 checkpoints of its experiment and writes the best one to
-`checkpoints/best.pt`.  **`best.pt` is shared by all experiments and is overwritten by each
-new run**, so copy it (or use the per-experiment checkpoint) if you want to keep it.
+`checkpoints/<experiment_name>_<model name>/best.pt`, so runs never overwrite each other.
 
 TensorBoard logs are written to `logs/`.  Launch with:
 
@@ -102,7 +101,7 @@ tensorboard --logdir logs
 
 ```bash
 python scripts/evaluate.py \
-    --checkpoint checkpoints/best.pt \
+    --checkpoint checkpoints/<experiment>/best.pt \
     --dataset    configs/dataset/fma_small.yaml \
     --output-dir outputs/evaluation
 ```
@@ -116,7 +115,7 @@ The model architecture is rebuilt from the config stored inside the checkpoint.
 
 ```bash
 python scripts/predict.py path/to/song.mp3 \
-    --checkpoint checkpoints/best.pt \
+    --checkpoint checkpoints/<experiment>/best.pt \
     --top-k 3
 ```
 
@@ -157,7 +156,7 @@ Datasets, caches, checkpoints, logs and outputs are git-ignored.
 ### Trying a trained model on any audio file
 
 ```bash
-python scripts/predict.py path/to/song.mp3 --checkpoint checkpoints/best.pt --top-k 3
+python scripts/predict.py path/to/song.mp3 --checkpoint checkpoints/<experiment>/best.pt --top-k 3
 ```
 
 The architecture is read from the checkpoint, so `--model` is not needed.

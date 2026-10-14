@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Gradio genre classifier demo.")
-    p.add_argument("--checkpoint", default="checkpoints/pretrained_best.pt")
+    p.add_argument("--checkpoint", default="checkpoints/pretrained_15ep_AST-HuggingFace/best.pt")
     p.add_argument("--dataset", default="configs/dataset/fma_small.yaml")
     p.add_argument("--share", action="store_true", help="Create a public Gradio link")
     return p.parse_args()

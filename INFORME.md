@@ -79,8 +79,8 @@ La validación llegó a 54 % en la **primera** época (el modelo desde cero tard
 ## 7. Siguientes pasos recomendados
 
 1. ~~Evaluar el preentrenado en test~~ (hecho: 56,75 %).
-2. Corregir el README: las estadísticas se guardan en `data/cache/fma_small/stats.json` (no en el YAML), la tabla de resultados esperados, y que `best.pt` es único.
-3. Hacer que `best.pt` viva dentro de la carpeta de cada experimento: hoy un entrenamiento nuevo lo sobrescribe. **Ya ha ocurrido:** el `best.pt` actual es el del preentrenado; el del modelo desde cero se conserva en `checkpoints/scratch_50ep_AST-scratch/epoch046_val_acc0.5350.pt`.
+2. ~~Corregir el README~~ (hecho).
+3. ~~`best.pt` por experimento~~ (hecho: ahora se guarda en `checkpoints/<experimento>/best.pt`).
 4. Probar menos regularización (mixup/SpecAugment) o más épocas en el modelo desde cero, y una normalización acorde al preentrenado.
 
 ## 8. Dónde está cada cosa

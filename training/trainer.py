@@ -189,7 +189,7 @@ class Trainer:
                 score > best_score if self.mode == "max" else score < best_score
             ):
                 best_score, best = score, metrics
-                self._save_checkpoint(self.ckpt_dir.parent / "best.pt", metrics)
+                self._save_checkpoint(self.ckpt_dir / "best.pt", metrics)
             self._save_topk(score, epoch, metrics)
 
             if self.early_stopping.step(score, self.model):
