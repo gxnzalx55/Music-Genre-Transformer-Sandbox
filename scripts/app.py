@@ -31,14 +31,27 @@ def main() -> None:
 
     args = parse_args()
     device = get_device()
-    model, ckpt_cfg = load_model_from_checkpoint(args.checkpoint, device)
-    model.eval()
     cfg = OmegaConf.load(args.dataset)
-    genres = sorted(ckpt_cfg.dataset.genres)
-    mean, std = load_stats(cfg)
     sr, hop = cfg.audio.sample_rate, cfg.mel.hop_length
 
+    model, genres, mean, std = None, [], None, None
+    load_error = None
+    try:
+        model, ckpt_cfg = load_model_from_checkpoint(args.checkpoint, device)
+        model.eval()
+        genres = sorted(ckpt_cfg.dataset.genres)
+        mean, std = load_stats(cfg)
+    except Exception as e:
+        model = None
+        load_error = (
+            f"No se pudo cargar el modelo desde '{args.checkpoint}' "
+            f"({type(e).__name__}: {e}). La app funciona, pero no se pueden hacer predicciones."
+        )
+        print(f"[WARNING] {load_error}")
+
     def predict(path: str) -> dict[str, float]:
+        if model is None:
+            raise gr.Error(load_error)
         if not path:
             return {}
         spec = compute_melspec(Path(path), cfg)
@@ -57,8 +70,9 @@ def main() -> None:
     demo = gr.Interface(
         fn=predict,
         inputs=gr.Audio(type="filepath", label="Audio (mp3/wav/flac)"),
-        outputs=gr.Label(num_top_classes=len(genres), label="Genre"),
+        outputs=gr.Label(num_top_classes=len(genres) or None, label="Genre"),
         title="Music genre classifier (AST, FMA small)",
+        description=f" {load_error}" if load_error else None,
         flagging_mode="never",
     )
     demo.launch(share=args.share)
