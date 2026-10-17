@@ -7,7 +7,7 @@ Train and evaluate an Audio Spectrogram Transformer (AST) on the
 - **AST pretrained** — fine-tuning `MIT/ast-finetuned-audioset-10-10-0.4593`
   from HuggingFace.
 
-See [`INFORME.md`](INFORME.md) for a detailed report of the implementation and results.
+See [`informes/01_Implementacion_y_entrenamiento_AST.md`](informes/01_Implementacion_y_entrenamiento_AST.md) for a detailed report of the implementation and results.
 
 ## Requirements
 
@@ -130,6 +130,98 @@ Output example:
 normalisation statistics.  `--model` is accepted but unused: the architecture comes from
 the checkpoint.
 
+### 5 — Add your own genres (Spotify playlists)
+
+You can add new classes beyond the 8 FMA genres by ingesting public Spotify playlists.
+**One playlist = one genre**: every song inherits the label you give the playlist, so use
+playlists that really are about one genre.
+
+**Setup (once).** spotDL lives in its own virtual environment so its dependencies do not
+mix with the training ones:
+
+```bash
+python -m venv .venv-spotdl
+.venv-spotdl\Scripts\pip install spotdl
+```
+
+The path to `spotdl.exe` is `spotdl_exe` in `configs/ingest/default.yaml`.  ffmpeg is taken
+from `PATH` or from the bundled `imageio-ffmpeg`.
+
+**Ingest.**
+
+```bash
+# one playlist
+python scripts/ingest_playlist.py <SPOTIFY_URL> --genre Reggaeton --out data/custom
+
+# several playlists in one run, each with its genre
+python scripts/ingest_playlist.py --out data/custom \
+    --playlist Reggaeton=<URL1> --playlist Jazz=<URL2> --playlist Metal=<URL3>
+```
+
+For each song it downloads the full track with spotDL (matched on YouTube Music), checks
+that the duration is within 5 s of Spotify's (otherwise it is discarded as a wrong match),
+cuts a 30 s segment starting at 35 % of the song and stores its log-mel as `.npy` with the
+same parameters as FMA.  The full download is always deleted.
+
+Output in `--out`: `mels/*.npy`, `manifest.csv` (one row per song with `genre` and
+`playlist`), `archive.txt` and `failed.log`.  Useful flags: `--dry-run` (list the playlist
+and planned segments, download nothing), `--limit N` (process only N new songs),
+`--workers N`.  `--genre` is required unless `--dry-run`.
+
+- **Resumable:** re-running the same command skips songs already ingested; Ctrl+C is safe.
+- **Existing songs keep their label:** if a song is already in the manifest with another
+  genre, it is not relabelled (a warning is printed).  Edit `manifest.csv` by hand to
+  change a label.
+- Spotify's own genre tags are **not** used: spotDL returns them empty with the current
+  Spotify API.
+- ~36 s per song, so 100 songs take about an hour.
+
+**Check the labels (recommended).**
+
+```bash
+python scripts/check_labels.py --data data/custom
+```
+
+A mixed playlist puts noise into its class.  This embeds every song with the fine-tuned AST
+(`--checkpoint`, default `pretrained_scale05`), measures how far each one is from the
+centre of its genre and writes `data/custom/review.csv`, sorted from most to least
+suspicious, with `status` = `ok`, `outlier` (robust z-score above `--z`, default 3) or
+`not_judged` (genre with fewer than `--min-tracks` songs, default 10).  It only flags:
+nothing is deleted.  Listen to the outliers and remove or relabel them in `manifest.csv`,
+or leave them flagged and training will skip them.
+
+**Train and evaluate with the new genres.**
+
+```bash
+python scripts/train.py \
+    --dataset configs/dataset/fma_small.yaml \
+    --model   configs/model/ast_pretrained.yaml \
+    training.batch_size=16 experiment_name=custom dataset.custom.enabled=true
+
+python scripts/evaluate.py --checkpoint checkpoints/custom_AST-HuggingFace/best.pt \
+    --dataset configs/dataset/fma_small.yaml
+```
+
+The `custom` block of `configs/dataset/fma_small.yaml` is **off by default**, so FMA-only
+runs are unchanged.  When enabled:
+
+- The genres in the manifest are added to the 8 FMA ones and `num_classes` grows with them.
+  A custom genre with the same name as an FMA one (case-sensitive, e.g. `Pop`) is merged into
+  that class.
+- Custom songs are split 80/10/10 by a hash of their id (`custom.split`), so a song never
+  moves from test to training when you add more.  FMA keeps its official split.
+- Left out: songs without genre, songs flagged `outlier` in `review.csv`
+  (`custom.exclude_outliers`) and genres with fewer than `custom.min_tracks` songs
+  (default 30; a warning lists them).
+- Existing checkpoints have 8 outputs, so new classes need a new training run.
+  `evaluate.py` and `predict.py` use the classes stored in the checkpoint.
+
+Caveats: FMA small has ~1000 songs per class, so a class with only a few dozen songs is
+learned poorly and its validation/test metrics are very noisy.  Aim for hundreds of songs
+per genre.  Songs come from the YouTube Music match, not from Spotify itself; the duration
+check lowers, but does not remove, the chance of a live or remixed version.  Training with
+custom genres has been covered by unit tests only, not yet run end to end on real playlists.
+
 ## Switching to FMA medium (16 genres)
 
 Replace `--dataset configs/dataset/fma_small.yaml` with
@@ -142,13 +234,13 @@ only FMA small has been run end to end.
 ```
 music_genre_clf/
 ├── configs/           YAML hyperparameters (base + dataset + model)
-├── data/              Download, preprocessing, Dataset, augmentations
+├── data/              Download, preprocessing, Dataset, augmentations, ingest/ + custom.py (own songs)
 ├── models/            AST scratch, HuggingFace wrapper, factory, checkpoint loading
 ├── training/          Trainer, scheduler, early stopping, utilities
 ├── evaluation/        Metrics, confusion matrix, classification report
-├── scripts/           CLI entry points
+├── scripts/           CLI entry points (train, evaluate, predict, ingest_playlist, check_labels)
 ├── tests/             pytest suite (run with `python -m pytest`)
-└── INFORME.md         Detailed implementation and results report
+└── informes/          Numbered reports (implementation, results, ingestion pipeline)
 ```
 
 Datasets, caches, checkpoints, logs and outputs are git-ignored.
@@ -173,4 +265,4 @@ The pretrained model reached 54 % validation accuracy after a single epoch and p
 around 62–63 % from epoch 7, with mild overfitting afterwards.  On the test split
 the pretrained model is ~7-9 points better than the scratch one.  The 0.5 input scale matches the
 std ≈ 0.5 inputs the HF AST was pretrained on; the gain (+1.9 pts) is within test noise (±1.7).  Both models are below the usual
-literature figures; see `INFORME.md` for limitations and suggested next steps.
+literature figures; see `informes/01_Implementacion_y_entrenamiento_AST.md` for limitations and suggested next steps.
