@@ -33,9 +33,14 @@ def main() -> None:
 
     args = parse_args()
     device = get_device()
-    model, _ = load_model_from_checkpoint(args.checkpoint, device)
+    model, ckpt_cfg = load_model_from_checkpoint(args.checkpoint, device)
 
     dataset_cfg = OmegaConf.load(args.dataset)
+    # Evaluate on the classes the model was trained with (custom genres included).
+    dataset_cfg.genres = list(ckpt_cfg.dataset.genres)
+    dataset_cfg.num_classes = len(dataset_cfg.genres)
+    if "custom" in ckpt_cfg.dataset:
+        dataset_cfg.custom = ckpt_cfg.dataset.custom
     ds = FMADataset(dataset_cfg, args.split, mode="eval")
     loader = DataLoader(ds, batch_size=8, shuffle=False, collate_fn=eval_collate)
 

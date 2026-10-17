@@ -53,6 +53,8 @@ def load_config(
     )
     if overrides:
         cfg = OmegaConf.merge(cfg, OmegaConf.from_dotlist(list(overrides)))
+    from data.custom import expand_dataset_cfg
+    expand_dataset_cfg(cfg.dataset)   # adds ingested genres when dataset.custom is enabled
     if cfg.model.get("num_classes") is None:
         cfg.model.num_classes = cfg.dataset.num_classes
     return cfg

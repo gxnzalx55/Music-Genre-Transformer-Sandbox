@@ -15,6 +15,16 @@ genres:
   - Pop
   - Rock
 
+# ── Custom songs (scripts/ingest_playlist.py) ────────────────────────────────
+# Off by default. Enable with the CLI override  dataset.custom.enabled=true
+# Their genres are appended to `genres` automatically (num_classes follows).
+custom:
+  enabled: false
+  dir: "data/custom"
+  split: {training: 0.8, validation: 0.1, test: 0.1}   # stable, by hash of the song id
+  exclude_outliers: true    # drop songs flagged "outlier" in <dir>/review.csv
+  min_tracks: 30            # genres with fewer songs are ignored (too few to split/learn)
+
 # ── Audio ────────────────────────────────────────────────────────────────────
 audio:
   sample_rate: 16000

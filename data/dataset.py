@@ -10,6 +10,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
+from data.custom import custom_enabled, load_custom_items
 from data.stats import load_stats
 
 log = logging.getLogger(__name__)
@@ -94,12 +95,18 @@ class FMADataset(Dataset):
         corrupt_ids = _load_corrupt_ids(Path(cfg.corrupt_log))
         tracks = tracks[~tracks.index.isin(corrupt_ids)]
 
+        custom_items = (
+            [it for it in load_custom_items(cfg.custom) if it["split"] == split]
+            if custom_enabled(cfg) else []
+        )
+
         # Build genre → index map
         if cfg.genres is not None:
             genres = [str(g) for g in cfg.genres]
         else:
             genres = sorted(
-                tracks[("track", "genre_top")].dropna().unique().tolist()
+                set(tracks[("track", "genre_top")].dropna().unique().tolist())
+                | {it["genre"] for it in custom_items}
             )
         self.genre_to_idx: dict[str, int] = self.build_genre_map(genres)
 
@@ -108,9 +115,20 @@ class FMADataset(Dataset):
         has_cache = tracks.index.map(
             lambda tid: (cache_dir / f"{tid}.npy").exists()
         )
-        self.tracks = tracks[has_genre & has_cache]
-        self.track_ids: list[int] = self.tracks.index.tolist()
-        self.cache_dir = cache_dir
+        tracks = tracks[has_genre & has_cache]
+
+        # One flat list of samples: FMA tracks (int ids) then custom songs (str ids).
+        self.track_ids: list = tracks.index.tolist()
+        self._paths: list[Path] = [cache_dir / f"{tid}.npy" for tid in self.track_ids]
+        self._labels: list[int] = [
+            self.genre_to_idx[str(g)] for g in tracks[("track", "genre_top")]
+        ]
+        for it in custom_items:
+            if it["genre"] in self.genre_to_idx:
+                self.track_ids.append(it["track_id"])
+                self._paths.append(it["path"])
+                self._labels.append(self.genre_to_idx[it["genre"]])
+        self.n_custom = len(self.track_ids) - len(tracks)
 
         # Frame counts derived from config
         sr  = int(cfg.audio.sample_rate)
@@ -123,8 +141,8 @@ class FMADataset(Dataset):
         self.mean, self.std = load_stats(cfg)
 
         log.info(
-            "FMADataset [%s | %s]: %d tracks, %d classes",
-            split, mode, len(self.track_ids), len(self.genre_to_idx),
+            "FMADataset [%s | %s]: %d tracks (%d custom), %d classes",
+            split, mode, len(self.track_ids), self.n_custom, len(self.genre_to_idx),
         )
 
     # ── Dataset protocol ─────────────────────────────────────────────────────
@@ -134,11 +152,8 @@ class FMADataset(Dataset):
 
     def __getitem__(self, idx: int):
         """Return ``(tensor, label)`` in train mode or ``([tensors], label)`` in eval mode."""
-        track_id = self.track_ids[idx]
-        genre    = self.tracks.loc[track_id, ("track", "genre_top")]
-        label    = self.genre_to_idx[str(genre)]
-
-        spec = np.load(self.cache_dir / f"{track_id}.npy")   # (n_mels, T)
+        label = self._labels[idx]
+        spec = np.load(self._paths[idx])   # (n_mels, T)
 
         if self.mode == "train":
             crop   = self._random_crop(spec)
