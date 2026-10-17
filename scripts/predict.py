@@ -12,7 +12,7 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Predict music genre from an audio file."
     )
-    p.add_argument("audio_file", help="Path to .mp3 / .wav / .flac")
+    p.add_argument("audio_file", help="Path to .mp3 / .wav / .flac, or a cached log-mel .npy")
     p.add_argument("--checkpoint", required=True,
                    help="Path to .pt checkpoint file")
     p.add_argument("--dataset",    default="configs/dataset/fma_small.yaml")
@@ -41,7 +41,11 @@ def main() -> None:
     dataset_cfg = OmegaConf.load(args.dataset)
     genres = sorted(ckpt_cfg.dataset.genres)
 
-    spec = compute_melspec(Path(args.audio_file), dataset_cfg)          # (n_mels, T)
+    audio_path = Path(args.audio_file)
+    if audio_path.suffix == ".npy":
+        spec = np.load(audio_path).astype(np.float32)                    # (n_mels, T)
+    else:
+        spec = compute_melspec(audio_path, dataset_cfg)                  # (n_mels, T)
     sr, hop = dataset_cfg.audio.sample_rate, dataset_cfg.mel.hop_length
     windows = sliding_windows(
         spec,

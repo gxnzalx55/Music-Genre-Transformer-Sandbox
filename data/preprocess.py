@@ -29,25 +29,18 @@ def is_corrupt(audio_path: Path) -> bool:
         return True
 
 
-def compute_melspec(audio_path: Path, cfg) -> np.ndarray:
-    """Load an MP3, resample to mono @ cfg.audio.sample_rate, return log-mel spectrogram.
+def waveform_to_melspec(waveform, orig_sr: int, cfg) -> np.ndarray:
+    """Mix to mono, resample to cfg.audio.sample_rate and return the log-mel.
 
+    Args:
+        waveform: torch.Tensor of shape (channels, samples).
     Returns:
         np.ndarray of shape (n_mels, T), dtype float32.
     """
     import torch
-    import torchaudio
     import torchaudio.transforms as T
 
     sr = cfg.audio.sample_rate
-
-    try:
-        waveform, orig_sr = torchaudio.load(str(audio_path))
-    except Exception:
-        import librosa
-        y, orig_sr = librosa.load(str(audio_path), sr=None, mono=True)
-        waveform = torch.from_numpy(y).unsqueeze(0)
-        orig_sr = int(orig_sr)
 
     # Mix to mono
     if waveform.shape[0] > 1:
@@ -73,6 +66,26 @@ def compute_melspec(audio_path: Path, cfg) -> np.ndarray:
         mel = db_transform(mel)
 
     return mel.squeeze(0).numpy().astype(np.float32)  # (n_mels, T)
+
+
+def compute_melspec(audio_path: Path, cfg) -> np.ndarray:
+    """Load an MP3, resample to mono @ cfg.audio.sample_rate, return log-mel spectrogram.
+
+    Returns:
+        np.ndarray of shape (n_mels, T), dtype float32.
+    """
+    import torch
+    import torchaudio
+
+    try:
+        waveform, orig_sr = torchaudio.load(str(audio_path))
+    except Exception:
+        import librosa
+        y, orig_sr = librosa.load(str(audio_path), sr=None, mono=True)
+        waveform = torch.from_numpy(y).unsqueeze(0)
+        orig_sr = int(orig_sr)
+
+    return waveform_to_melspec(waveform, int(orig_sr), cfg)
 
 
 def _process_track(

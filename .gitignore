@@ -6,6 +6,7 @@ __pycache__/
 # Datasets, caches and run artifacts
 data/fma_*
 data/cache/
+data/custom/
 checkpoints/*
 logs/*
 outputs/*
@@ -14,3 +15,4 @@ prepare_data.log
 train_pretrained.log
 train_scratch.log
 train_pretrained_scale05.log
+.venv-spotdl/

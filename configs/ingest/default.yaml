@@ -1,0 +1,15 @@
+# Parameters for scripts/ingest_playlist.py
+offset_ratio: 0.35       # segment starts at duration * offset_ratio
+segment_seconds: 30.0    # segment length (s); must match dataset audio.clip_duration
+min_duration: 30.0       # songs shorter than this are discarded
+
+sleep_min: 2.0           # pause between downloads (s), per worker
+sleep_max: 5.0
+retries: 3
+
+mel_dataset_cfg: "configs/dataset/fma_small.yaml"   # mel/audio params shared with FMA
+
+# Spotify source (spotDL lives in its own venv, see informes/03)
+spotdl_exe: ".venv-spotdl/Scripts/spotdl.exe"
+spotdl_format: "m4a"
+duration_tolerance: 5.0  # max |downloaded length - Spotify length| (s); guards against wrong matches
