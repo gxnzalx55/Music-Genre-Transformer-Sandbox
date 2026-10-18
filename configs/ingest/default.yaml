@@ -9,7 +9,7 @@ retries: 3
 
 mel_dataset_cfg: "configs/dataset/fma_small.yaml"   # mel/audio params shared with FMA
 
-# Spotify source (spotDL lives in its own venv, see informes/03)
+# Spotify source (spotDL lives in its own venv, see informes/02)
 spotdl_exe: ".venv-spotdl/Scripts/spotdl.exe"
 spotdl_format: "m4a"
 duration_tolerance: 5.0  # max |downloaded length - Spotify length| (s); guards against wrong matches
