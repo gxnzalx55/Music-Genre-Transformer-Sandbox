@@ -56,3 +56,23 @@ Con 712 canciones, el split 80/10/10 por hash daría unas 570 en train, 71 en va
 3. Entrenamiento corto con `dataset.custom.enabled=true` para validar el flujo completo (entrenar → evaluar → `predict`).
 4. Etiquetar o descartar las 5 pistas de AC/DC.
 5. Probar las pendientes de Spotify del informe 02: Ctrl+C a mitad y pista sin coincidencia.
+
+## 8. Actualización (2026-10-24): causa confirmada y abandono de la vía Spotify
+
+**Estado final: ingesta fallida y abandonada.** Rama marcada con el commit `91e6257 FAILED: Spotify playlist ingestion abandoned`.
+
+### Diagnóstico
+- Se ejecutó `spotdl save` a mano con `--ffmpeg` (el de `imageio-ffmpeg`) y `--log-level DEBUG`. El listado inicial funciona (`Found 712 songs` en ~7 s), pero después el proceso se queda parado (0 de CPU, sin red) durante más de 4 min sin escribir `list.spotdl`.
+- Llamada directa a la API de Spotify con las credenciales de `~/.spotdl/config.json`: el token se obtiene bien, pero la petición a la API devuelve **HTTP 429 con `Retry-After: 86400`** (24 h).
+- El `client_id` configurado (`5f573c96…`) es el público que spotDL trae por defecto y comparten todos sus usuarios. El límite se aplica a ese `client_id`, no a la IP local, así que esperar no garantiza que se resuelva.
+- Esto confirma la hipótesis de la sección 3: spotipy duerme el `Retry-After` completo al pedir los metadatos de cada canción.
+
+### Hallazgo en el código
+`data/ingest/spotify.py` (`_run`) llama a `subprocess.run` sin `timeout`, por lo que un 429 largo cuelga la ingesta indefinidamente y sin mensaje. No se modificó.
+
+### Solución descartada
+Crear una app propia en https://developer.spotify.com/dashboard y poner su `client_id`/`client_secret` en `~/.spotdl/config.json`. Se decidió no seguir por esta vía.
+
+### Estado
+- Sin cambios en código, configuración ni datos. `data/custom` sigue con las 5 pistas de AC/DC sin género.
+- Los pasos 1–3 de la sección 7 (ingesta de Metal, `check_labels.py`, entrenamiento con datos propios) quedan sin hacer. Habría que buscar otra fuente para la clase Metal.
